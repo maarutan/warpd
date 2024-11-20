@@ -362,48 +362,49 @@ struct input_event *x_input_next_event(int timeout)
 	}
 }
 
+
 struct input_event *x_input_wait(struct input_event *events, size_t sz)
 {
-	size_t i;
-	static struct input_event ev;
-	struct input_evnet *ret = NULL;
+    size_t i;
+    static struct input_event ev;
+    struct input_event *ret = NULL; // Исправлено с input_evnet на input_event
 
-	for (i = 0; i < sz; i++) {
-		struct input_event *ev = &events[i];
-		xgrab_key(ev->code, ev->mods, 1);
-	}
+    for (i = 0; i < sz; i++) {
+        struct input_event *ev = &events[i];
+        xgrab_key(ev->code, ev->mods, 1);
+    }
 
-	while (1) {
-		XEvent *xev = get_next_xev(100);
+    while (1) {
+        XEvent *xev = get_next_xev(100);
 
-		if (xev && (xev->type == KeyPress || xev->type == KeyRelease)) {
-			ev.code = (uint8_t)xev->xkey.keycode;
-			ev.mods = xmods_to_mods(xev->xkey.state);
-			ev.pressed = xev->type == KeyPress;
+        if (xev && (xev->type == KeyPress || xev->type == KeyRelease)) {
+            ev.code = (uint8_t)xev->xkey.keycode;
+            ev.mods = xmods_to_mods(xev->xkey.state);
+            ev.pressed = xev->type == KeyPress;
 
-			x_input_grab_keyboard();
+            x_input_grab_keyboard();
 
-			ret = &ev;
-			goto exit;
-		} else {
-			size_t i;
-			for (i = 0; i < nr_monitored_files; i++) {
-				long mtime = x_get_mtime(monitored_files[i].path);
-				if (mtime != monitored_files[i].mtime) {
-					monitored_files[i].mtime = mtime;
-					goto exit;
-				}
-			}
-		}
-	}
+            ret = &ev;
+            goto exit;
+        } else {
+            size_t i;
+            for (i = 0; i < nr_monitored_files; i++) {
+                long mtime = x_get_mtime(monitored_files[i].path);
+                if (mtime != monitored_files[i].mtime) {
+                    monitored_files[i].mtime = mtime;
+                    goto exit;
+                }
+            }
+        }
+    }
 
 exit:
-	for (i = 0; i < sz; i++) {
-		struct input_event *ev = &events[i];
-		xgrab_key(ev->code, ev->mods, 0);
-	}
+    for (i = 0; i < sz; i++) {
+        struct input_event *ev = &events[i];
+        xgrab_key(ev->code, ev->mods, 0);
+    }
 
-	return ret;
+    return ret;
 }
 
 /* Normalize keynames for non API code. */
